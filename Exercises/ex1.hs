@@ -8,7 +8,7 @@ maxi a b
 
 -- 2.1.2
 sumsq :: Integer -> Integer
-sumsq = foldr (+) 0 . map (^2) . enumFromTo 1
+sumsq = foldr ((+).(^2)) 0 . enumFromTo 1
 
 -- 2.1.3
 hanoi :: Integer -> Integer
@@ -34,6 +34,21 @@ isPrime :: Integer -> Bool
 isPrime = (<=1). numFactors
 
 -- 2.1.5
+data Month = Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | Dev
+             deriving (Show, Eq, Read, Ord, Enum, Bounded)
+
+normYear = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+daysInMonth :: Month -> Integer -> Integer
+daysInMonth Feb y = if (y `mod` 4 == 0) then 28 else 29
+daysInMonth m _   = normYear !! fromEnum m
+
+data Date = Date Integer Month Integer
+            deriving (Show, Eq, Read, Ord)
+
+validDate :: Date -> Bool
+validDate (Date y m d) = d >= 1 && (d <= daysInMonth m y)
+
+
 
 -- 2.2.1
 product' :: (Num a) => [a] -> a
@@ -47,10 +62,7 @@ substitute f t = map sel
 
 -- 2.2.3
 duplicates :: (Eq a) => [a] -> Bool
-duplicates [] = False
-duplicates (x:xs)
-  | x `elem` xs   = True
-  | otherwise     = duplicates xs
+duplicates xs = removeDuplicates xs /= xs
 
 removeDuplicates :: Eq a => [a] -> [a]
 removeDuplicates = foldl addUnique []

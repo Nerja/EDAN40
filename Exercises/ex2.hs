@@ -9,28 +9,25 @@ data Expr = Var String
           | Not Expr
 
 -- 2.1.2
-vars :: Expr -> [String]
-vars (Var name) = [name]
-vars (And e1 e2) = vars e1 ++ vars e2
-vars (Or e1 e2) = vars e1 ++ vars e2
-vars (Not e) = vars e
 
-varLookup :: String -> [(String, Bool)] -> Bool
-varLookup var = (fromMaybe False) . lookup var
+vars :: Expr -> [String]
+vars (Var name)   = [name]
+vars (And e1 e2)  = vars e1 `Data.List.union` vars e2
+vars (Or e1 e2)   = vars e1 `Data.List.union` vars e2
+vars (Not e)      = vars e
 
 truthValue :: Expr -> [(String, Bool)] -> Bool
-truthValue (Var v) table = varLookup v table
-truthValue (And e1 e2) table = truthValue e1 table && truthValue e2 table
-truthValue (Or e1 e2) table = truthValue e1 table || truthValue e2 table
-truthValue (Not e) table = not $ truthValue e table
+truthValue (Var n) table      = fromMaybe False $ lookup n table
+truthValue (And p1 p2) table  = truthValue p1 table && truthValue p2 table
+truthValue (Or p1 p2) table   = truthValue p1 table || truthValue p2 table
+truthValue (Not p) table      = not $ truthValue p table
 
 -- 2.1.3
 tautology :: Expr -> Bool
-tautology expr = and $ map (truthValue expr) $ allPos $ vars expr
-
-allPos :: [String] -> [[(String, Bool)]]
-allPos [] = [[]]
-allPos (v:vs) = [(v, value) : rec | rec <- allPos vs, value <- [True, False]]
+tautology p = all (truthValue p) $ allComb $ vars p
+  where allComb :: [String] -> [[(String, Bool)]]
+        allComb []      = [[]]
+        allComb (v:vs)  = [(v, val):rec | rec <- allComb vs, val <- [True, False]]
 
 -- 2.2.1
 data Item = File String
@@ -61,26 +58,53 @@ emptySet :: (Eq a) => Set a
 emptySet = Set []
 
 addElem :: (Eq a) => a -> Set a -> Set a
-addElem el (Set list)
-    | elem el list            = Set list
-    | otherwise               = Set (el:list)
+addElem x (Set xs) = Set $ [x] `Data.List.union` xs
 
-hasElem :: (Eq a) => a -> Set a -> Bool
-hasElem el (Set list) = elem el list
+containsElem :: (Eq a) => Set a -> a -> Bool
+containsElem (Set xs) = flip elem xs
 
-unionSet :: (Eq a) => Set a -> Set a -> Set a
-unionSet (Set l1) (Set l2) = Set $ union l1 l2
+union :: (Eq a) => Set a -> Set a -> Set a
+union (Set xs) (Set ys) = Set $ xs `Data.List.union` ys
 
 removeElem :: (Eq a) => a -> Set a -> Set a
-removeElem el (Set list) = Set $ filter(/=el) list
+removeElem x (Set xs) = Set $ xs \\ [x]
+
+-- Fast set
+newtype SortSet a = SortSet [a]
+emptySort :: SortSet a
+emptySort = SortSet []
+
+addElemSort :: (Ord a) => a -> SortSet a -> SortSet a
+addElemSort x set@(SortSet xs)
+  | set `containsElemSort` x  = set
+  | otherwise                 = SortSet $ x `insert` xs
+
+unionSort :: (Ord a) => SortSet a -> SortSet a -> SortSet a
+unionSort (SortSet xs) (SortSet ys) = SortSet $ xs `fastUnion` ys
+  where fastUnion :: (Ord a) => [a] -> [a] -> [a]
+        fastUnion xs []         = xs
+        fastUnion [] ys         = ys
+        fastUnion (x:xs) (y:ys)
+          | x == y    = fastUnion xs (y:ys)
+          | x < y     = x : fastUnion xs (y:ys)
+          | otherwise = y : fastUnion (x:xs) ys
+
+containsElemSort :: (Ord a) => SortSet a -> a -> Bool
+containsElemSort (SortSet xs) x = fastContains x xs 0 (length xs)
+  where fastContains :: (Ord a) => a -> [a] -> Int -> Int -> Bool
+        fastContains x xs s e
+          | s >= e        = False
+          | x == xs !! m  = True
+          | otherwise     = fastContains x xs s (m-1) || fastContains x xs (m+1) e
+          where m = (s+e) `div` 2
 
 -- 2.4
 --instance (Ord a, Ord b) => Ord (a,b) where
 --  compare (a,b) (c,d)
---    | a < b       = LT
---    | a > b       = GT
---    | b < c       = LT
---    | b > c       = GT
+--    | a < c       = LT
+--    | a > c       = GT
+--    | b < d       = LT
+--    | b > d       = GT
 --    | otherwise   = EQ
 
 --instance (Ord b) => Ord [b] where
