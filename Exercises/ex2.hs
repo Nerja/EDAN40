@@ -139,3 +139,84 @@ instance Num ListNatural where
   abs                                       = id
   signum (ListNatural xs)                   = if (length xs > 0) then 1 else 0
   fromInteger                               = ListNatural . map (const ()) . enumFromTo 1
+
+-- 2.6
+{-
+1)
+Known:
+(.) :: (b -> c) -> (a -> b) -> a -> c
+(:) :: a' -> [a'] -> [a']
+
+(.)(:) Unify (b -> c) with a' -> [a'] -> [a'] gives
+b = a', c = [a'] -> [a']
+
+(.)(:) :: (a -> a') -> a -> [a'] -> [a'] changing a' = b
+(.)(:) :: (a -> b) -> a -> [b] -> [b]
+
+2)
+Known:
+(:) :: a -> [a] -> [a]
+(.) :: (b -> c) -> (a' -> b) -> a' -> c
+
+(:(.)) Unify [a] with (b -> c) -> (a' -> b) -> a' -> c
+Not possible!
+
+3)
+Known:
+(:) :: a -> [a] -> [a]
+(.) :: (b -> c) -> (a' -> b) -> a' -> c
+
+((.):) Unify a with (b -> c) -> (a' -> b) -> a' -> c gives
+a = (b -> c) -> (a' -> b) -> a' -> c
+
+((.):) :: [(b -> c) -> (a' -> b) -> a' -> c] -> [(b -> c) -> (a' -> b) -> a' -> c]
+changing a' = a gives
+((.):) :: [(b -> c) -> (a -> b) -> a -> c] -> [(b -> c) -> (a -> b) -> a -> c]
+
+4)
+Known:
+(:) :: a -> [a] -> [a]
+(:) :: a' -> [a'] -> [a']
+
+((:):) Unify a with a' -> [a'] -> [a'] gives a = a' -> [a'] -> [a']
+
+((:):) :: [a' -> [a'] -> [a']] -> [a' -> [a'] -> [a']] changing a' = a
+((:):) :: [a -> [a] -> [a]] -> [a -> [a] -> [a]]
+
+5)
+Known:
+(.) :: (b -> c) -> (a -> b) -> a -> c
+(.) :: (b' -> c') -> (a' -> b') -> a' -> c'
+
+(.)(.) Unify (b -> c) with (b' -> c') -> (a' -> b') -> a' -> c' gives
+b = (b' -> c') and c = (a' -> b') -> a' -> c'
+
+(.)(.) :: (a -> b' -> c') -> a -> (a' -> b') -> a' -> c'
+changing b' = b, c' = c
+(.)(.) :: (a -> b -> c) -> a -> (a' -> b) -> a' -> c
+
+6)
+(-) :: Num a => a -> a
+
+7)
+(+0) :: Num a => a -> a
+(0+) :: Num a' => a' -> a'
+(.) :: (b -> c) -> (a'' -> b) -> a'' -> c
+
+(+0).(0+) Unify (b->c) with Num a => a -> a and (a'' -> b) with Num a' => a' -> a'
+gives b = a, c = a, a'' = a', b = a'
+
+(+0).(0+) :: Num a => a -> a
+
+8)
+($) :: (a -> b) -> a -> b
+($) :: (a' -> b') -> a' -> b'
+($) :: (a'' -> b'') -> a'' -> b''
+
+(($)$($)) Unify (a -> b) with (a' -> b') -> a' -> b' and a with (a'' -> b'') -> a'' -> b''
+gives a = (a' -> b') and b = (a' -> b') and a = (a'' -> b'') -> a'' -> b''
+Two equations of a gives a' = (a'' -> b'') and b' = a'' -> b''
+
+(($)$($)) :: (a'' -> b'') -> a'' -> b'' changing a'' = a, b'' = b
+(($)$($)) :: (a -> b) -> a -> b
+-}
